@@ -1,8 +1,22 @@
 #ifndef shuntingyard_hpp
 #define shuntingyard_hpp
 #include <iostream>
+#include <vector>
 #include "stack.hpp"
 using namespace std;
+
+enum Symbol {
+    TK_LITERAL, TK_LPAREN, TK_RPAREN, TK_OR, TK_STAR, TK_CAT, TK_NONE
+};
+
+struct Token {
+    char glif;
+    Symbol symbol;
+    Token(char c = ' ', Symbol s = TK_NONE) {
+        glif = c;
+        symbol = s;
+    }
+};
 
 class Shuntingyard {
     private:
@@ -12,6 +26,7 @@ class Shuntingyard {
             switch (c) {
                 case '*': return 50;
                 case '+': return 50;
+                case '?': return 50;
                 case '@': return 30;
                 case '|': return 20;
                 default:
@@ -23,6 +38,7 @@ class Shuntingyard {
             switch (c) {
                 case '*': 
                 case '+':
+                case '?':
                 case '|': 
                 case '@':
                     return true;
@@ -39,12 +55,16 @@ class Shuntingyard {
                     continue;
                 if (i+1 < str.length()) {
                     char p = str[i+1];
-                    if (p == '|' || p == '*' || p == '+' || p == ')')
+                    if (p == '|' || p == '*' || p == '+' || p == ')' || p == '?')
                         continue;
                     fixed.push_back('@');
                 }
             }
             return fixed;
+        }
+        vector<Token> tokenize(string s) {
+            vector<Token> tokens;
+            return tokens;
         }
     public:
         Shuntingyard() {
@@ -53,11 +73,12 @@ class Shuntingyard {
         string in2post(string& str) {
             str = addConcatOp(str);
             cout<<"Inserting explicit concat operators: "<<str<<endl;
+            vector<Token> tokenized = tokenize(str);
             postfix.clear();
             for (int i = 0; i < str.length(); i++) {
                 if (str[i] == '(') {
                     ops.push(str[i]);
-                } else if (str[i] == '|' || str[i] == '*' || str[i] == '+' || str[i] == '@') {
+                } else if (str[i] == '|' || str[i] == '*' || str[i] == '+' || str[i] == '@' || str[i] == '?') {
                         if (precedence(str[i]) < precedence(ops.top()) || (precedence(str[i]) == precedence(ops.top()) && leftAssociative(str[i]))) {
                             char c = ops.pop();
                             postfix.push_back(c);

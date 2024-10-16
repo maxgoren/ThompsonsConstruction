@@ -2,8 +2,10 @@
 #define nfa_hpp
 #include <iostream>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include "stack.hpp"
+#include "queue.hpp"
 using namespace std;
 
 class Edge {
@@ -62,6 +64,25 @@ struct Transition {
     }
 };
 
+bool operator==(const Transition& s, const Transition& t) {
+    return s.from == t.from && s.to == t.to && s.edge == t.edge;
+}
+
+bool operator!=(const Transition& s, const Transition& t) {
+    return !(s == t);
+}
+
+namespace std {
+    template <> struct hash<Transition> {
+        std::size_t operator()(const Transition& t) const noexcept {
+            string tmp = to_string(t.from);
+            tmp.push_back(t.edge->getLabel());
+            tmp += to_string(t.to);
+            return std::hash<string>()(tmp);
+        }
+    };
+}
+
 class NFA {
     private:
         State start;
@@ -115,26 +136,26 @@ class NFA {
             cout<<"Attempting to match: "<<text<<endl;
             cout<<"Start state: "<<start<<endl;
             cout<<"Accept state: "<<accept<<endl;
-            Stack<pair<int,State>> sf;
+            Stack<pair<int, State>> sf;
             sf.push(make_pair(0, start));
             while (!sf.empty()) {
                 int strPos = sf.top().first;
                 State currState = sf.top().second;
                 sf.pop();
-                cout<<"State: "<<currState<<", Character: ";
-                char cm = text[strPos];
-                cout<<cm<<endl;
+                char input = text[strPos];
+                cout<<"State: "<<currState<<", Input: "<<input<<endl;
                 if (accept == currState) {
                     cout<<"Found Accept State."<<endl;
                     return true;
                 }
                 for (Transition t : states[currState]) {
-                    cout<<"    "<<t.from<<" -> "<<t.to<<endl;
-                    if ((t.edge->matches(cm) || t.edge->matches('.')) || t.edge->isEpsilon()) {
-                        cout<<"     + Match on " <<t.edge->getLabel()<<endl;
+                    cout<<"    "<<t.from<<" -> "<<t.to;
+                    if ((t.edge->matches(input) || t.edge->matches('.')) || t.edge->isEpsilon()) {
+                        cout<<"\n     + Match on " <<t.edge->getLabel()<<endl;
                         int next = t.edge->isEpsilon() ? strPos:strPos+1;
                         sf.push(make_pair(next, t.to));
                     }
+                    cout<<endl;
                 }
             }
             return false;
