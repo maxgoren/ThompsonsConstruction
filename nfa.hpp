@@ -1,11 +1,11 @@
 #ifndef nfa_hpp
 #define nfa_hpp
 #include <iostream>
+#include <set>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 #include "stack.hpp"
-#include "queue.hpp"
 using namespace std;
 
 class Edge {
@@ -62,6 +62,30 @@ struct Transition {
     Transition(State s, State t, Edge* e) {
         from = s; to = t; edge = e;
     }
+    Transition(const Transition& t) {
+        from = t.from;
+        to = t.to;
+        if (t.edge->isEpsilon()) {
+            edge = new EpsilonEdge();
+        } else {
+            edge = new CharEdge(t.edge->getLabel());
+        }
+    }
+    ~Transition() {
+        delete edge;
+    }
+    Transition& operator=(const Transition& t) {
+        if (this != &t) {
+            from = t.from;
+            to = t.to;
+            if (t.edge->isEpsilon()) {
+                edge = new EpsilonEdge();
+            } else {
+                edge = new CharEdge(t.edge->getLabel());
+            }
+        }
+        return *this;
+    }
 };
 
 bool operator==(const Transition& s, const Transition& t) {
@@ -82,6 +106,14 @@ namespace std {
         }
     };
 }
+
+struct Node {
+    int strPos;
+    State state;
+    unordered_set<Transition> epsHistory;
+    Node(int sp, State s, unordered_set<Transition> t) : strPos(sp), state(s), epsHistory(t) { }
+};
+
 
 class NFA {
     private:
@@ -126,7 +158,7 @@ class NFA {
         int size() {
             return states.size();
         }
-        unordered_map<State, vector<Transition>> getStates() {
+        unordered_map<State, vector<Transition>>& getStates() {
             return states;
         }
         vector<Transition>& getTransitions(State state) {
@@ -136,11 +168,13 @@ class NFA {
             cout<<"Attempting to match: "<<text<<endl;
             cout<<"Start state: "<<start<<endl;
             cout<<"Accept state: "<<accept<<endl;
-            Stack<pair<int, State>> sf;
-            sf.push(make_pair(0, start));
+            unordered_set<Transition> epsHistory;
+            Stack<Node> sf;
+            sf.push(Node(0, start, epsHistory));
             while (!sf.empty()) {
-                int strPos = sf.top().first;
-                State currState = sf.top().second;
+                int strPos = sf.top().strPos;
+                State currState = sf.top().state;
+                epsHistory = sf.top().epsHistory;
                 sf.pop();
                 char input = text[strPos];
                 cout<<"State: "<<currState<<", Input: "<<input<<endl;
@@ -148,12 +182,25 @@ class NFA {
                     cout<<"Found Accept State."<<endl;
                     return true;
                 }
+
                 for (Transition t : states[currState]) {
                     cout<<"    "<<t.from<<" -> "<<t.to;
                     if ((t.edge->matches(input) || t.edge->matches('.')) || t.edge->isEpsilon()) {
-                        cout<<"\n     + Match on " <<t.edge->getLabel()<<endl;
-                        int next = t.edge->isEpsilon() ? strPos:strPos+1;
-                        sf.push(make_pair(next, t.to));
+                        if (t.edge->isEpsilon()) { 
+                            if (epsHistory.find(t) != epsHistory.end()) {
+                                cout<<"\nAlready on Stack.\n"<<endl;
+                                continue;
+                            }
+                            cout<<"\n     + Taking Epsilon transition."<<endl;
+                            epsHistory.insert(t);
+                            sf.push(Node(strPos, t.to, epsHistory));
+                        } else {
+                            cout<<"\n     + Match on " <<t.edge->getLabel()<<endl;
+                            epsHistory.clear();
+                            sf.push(Node(strPos + 1, t.to, epsHistory));
+                        }
+                    } else {
+                        cout<<", Nothing for us here, mate."<<endl;
                     }
                     cout<<endl;
                 }

@@ -1,7 +1,6 @@
 #ifndef compiler_hpp
 #define compiler_hpp
 #include <iostream>
-#include "shuntingyard.hpp"
 #include "parser.hpp"
 #include "nfa.hpp"
 using namespace std;
@@ -9,20 +8,20 @@ using namespace std;
 
 class NFACompiler {
     private:
-        Stack<NFA> nfaStack;
         int l;
-        int nextlabel() {
+        Stack<NFA> nfaStack;
+        int makeStateLabel() {
             return l++;
         }
         void initNextNFA(NFA& nnfa) {
-            int nstart = nextlabel();
+            int nstart = makeStateLabel();
             nnfa.makeState(nstart);
             nnfa.setStart(nstart);
-            int nend = nextlabel();
+            int nend = makeStateLabel();
             nnfa.makeState(nend);
             nnfa.setAccept(nend);
         }
-        void moveTransitions(NFA& nnfa, NFA onfa) {
+        void copyTransitions(NFA& nnfa, NFA onfa) {
             for (auto state : onfa.getStates()) {
                 nnfa.makeState(state.first);
                 for (auto trans : onfa.getTransitions(state.first)) {
@@ -30,27 +29,23 @@ class NFACompiler {
                 }
             }
         }
-        NFA singleCharExpr(Edge* edge) {
+        NFA singleTransitionNFA(Edge* edge) {
             NFA nfa;
-            int a = nextlabel();
-            int b = nextlabel();
-            nfa.makeState(a);
-            nfa.makeState(b);
-            nfa.setStart(a);
-            nfa.setAccept(b);
-            nfa.addTransition(Transition(a,b, edge));
+            initNextNFA(nfa);
+            nfa.addTransition(Transition(nfa.getStart(), nfa.getAccept(), edge)); 
             return nfa;
         }
+
         NFA emptyExpr() {
-            return singleCharExpr(new EpsilonEdge());
+            return singleTransitionNFA(new EpsilonEdge());
         }
         NFA atomicNFA(char c) {
-            return singleCharExpr(new CharEdge(c));
+            return singleTransitionNFA(new CharEdge(c));
         }
         NFA concatNFA(NFA first, NFA second) {
             NFA nnfa;
-            moveTransitions(nnfa, first);
-            moveTransitions(nnfa, second);
+            copyTransitions(nnfa, first);
+            copyTransitions(nnfa, second);
             nnfa.setStart(first.getStart());
             nnfa.setAccept(second.getAccept());
             nnfa.addTransition(Transition(first.getAccept(), second.getStart(), new EpsilonEdge()));
@@ -59,8 +54,8 @@ class NFACompiler {
         NFA kleeneNFA(NFA torepeat, bool mustMatch) {
             NFA nnfa;
             initNextNFA(nnfa);
-            torepeat.addTransition(Transition(torepeat.getAccept(), torepeat.getStart(), new EpsilonEdge()));
-            moveTransitions(nnfa, torepeat);
+            copyTransitions(nnfa, torepeat);
+            nnfa.addTransition(Transition(torepeat.getAccept(), nnfa.getStart(), new EpsilonEdge()));
             nnfa.addTransition(Transition(nnfa.getStart(), torepeat.getStart(), new EpsilonEdge()));
             nnfa.addTransition(Transition(torepeat.getAccept(), nnfa.getAccept(), new EpsilonEdge()));
             if (!mustMatch)
@@ -72,8 +67,8 @@ class NFACompiler {
             NFA nnfa;
             initNextNFA(nnfa);
             //copy states and transitions from both NFA's to new NFA
-            moveTransitions(nnfa, first);
-            moveTransitions(nnfa, second);
+            copyTransitions(nnfa, first);
+            copyTransitions(nnfa, second);
             //Add new E-transitions from new start state to first and second NFAs
             nnfa.addTransition(Transition(nnfa.getStart(), first.getStart(), new EpsilonEdge()));
             nnfa.addTransition(Transition(nnfa.getStart(), second.getStart(), new EpsilonEdge()));
@@ -82,14 +77,24 @@ class NFACompiler {
             nnfa.addTransition(Transition(second.getAccept(), nnfa.getAccept(), new EpsilonEdge()));
             return nnfa;
         }
-        NFA buildOperatorNFA(astnode* ast) {
-            switch (ast->symbol) {
+        NFA zeroOrOnce(NFA onfa) {
+            NFA nnfa;
+            initNextNFA(nnfa);
+            copyTransitions(nnfa, onfa);
+            //wire in match choice
+            nnfa.addTransition(Transition(nnfa.getStart(), onfa.getStart(), new EpsilonEdge()));
+            nnfa.addTransition(Transition(onfa.getAccept(), nnfa.getAccept(), new EpsilonEdge()));
+            //wire in epsilon choice.
+            nnfa.addTransition(Transition(nnfa.getStart(), nnfa.getAccept(), new EpsilonEdge()));
+            return nnfa;
+        }
+        NFA buildOperatorNFA(RegularExpression* ast) {
+            switch (ast->getSymbol()) {
                 case '@': {
                     NFA b = nfaStack.pop();
                     NFA a = nfaStack.pop();
                     return concatNFA(a, b);
                 }
-                break;
                 case '|': {
                     NFA b = nfaStack.pop();
                     NFA a = nfaStack.pop();
@@ -103,24 +108,24 @@ class NFACompiler {
                     NFA a = nfaStack.pop();
                     return kleeneNFA(a, true);
                 }
-                break;
+                case '?': {
+                    NFA a = nfaStack.pop();
+                     return zeroOrOnce(a);
+                }
                 default:
                     break;
             }
             return NFA();
         }
-        void gen_nfa(astnode* ast) {
-            int l;
+        void gen_nfa(RegularExpression* ast) {
             if (ast != nullptr) {
-                gen_nfa(ast->left);
-                gen_nfa(ast->right);
-                NFA nfa;
-                if (ast->type == charnode) {
-                    nfa = atomicNFA(ast->symbol);
+                gen_nfa(ast->getLeft());
+                gen_nfa(ast->getRight());
+                if (!isOp(ast->getSymbol())) {
+                    nfaStack.push(atomicNFA(ast->getSymbol()));
                 } else {
-                    nfa = buildOperatorNFA(ast);
+                    nfaStack.push(buildOperatorNFA(ast));
                 }
-                nfaStack.push(nfa);
             }
         }
     public:
@@ -130,8 +135,8 @@ class NFACompiler {
         NFA compile(string pattern) {
             Parser parser;
             string re = "(" + pattern + ")";
-            astnode* ast = parser.parse(re);
-            traverse(ast);
+            auto ast = parser.parse(re);
+            traverse(ast, 1);
             gen_nfa(ast);
             return nfaStack.pop();
         }
