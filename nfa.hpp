@@ -164,13 +164,22 @@ class NFA {
         vector<Transition>& getTransitions(State state) {
             return states[state];
         }
-        bool match(string text) {
-            cout<<"Attempting to match: "<<text<<endl;
-            cout<<"Start state: "<<start<<endl;
-            cout<<"Accept state: "<<accept<<endl;
+        bool grep(string text) {
+            bool found = false;
+            for (int i = 0; i < text.length(); i++) {
+                if (match(text.substr(i))) {
+                    cout<<"Match starting from: "<<i<<endl;
+                    found = true;
+                }
+            }
+            return found;
+        }
+        bool matchbt(string text) {
+            cout<<"Attempting to match: "<<text<<", Start state: "<<start<<", Accept state: "<<accept<<endl;
             unordered_set<Transition> epsHistory;
             Stack<Node> sf;
             sf.push(Node(0, start, epsHistory));
+            int from = 0;
             while (!sf.empty()) {
                 int strPos = sf.top().strPos;
                 State currState = sf.top().state;
@@ -178,29 +187,28 @@ class NFA {
                 sf.pop();
                 char input = text[strPos];
                 cout<<"State: "<<currState<<", Input: "<<input<<endl;
-                if (accept == currState) {
+                if (accept == currState) { 
                     cout<<"Found Accept State."<<endl;
+                    cout<<text.substr(from, text.length()-strPos);
                     return true;
                 }
-
-                for (Transition t : states[currState]) {
-                    cout<<"    "<<t.from<<" -> "<<t.to;
+                for (auto it = states[currState].rbegin(); it != states[currState].rend(); it++) {
+                    Transition t = *it;
                     if ((t.edge->matches(input) || t.edge->matches('.')) || t.edge->isEpsilon()) {
                         if (t.edge->isEpsilon()) { 
                             if (epsHistory.find(t) != epsHistory.end()) {
                                 cout<<"\nAlready on Stack.\n"<<endl;
                                 continue;
                             }
-                            cout<<"\n     + Taking Epsilon transition."<<endl;
                             epsHistory.insert(t);
                             sf.push(Node(strPos, t.to, epsHistory));
                         } else {
-                            cout<<"\n     + Match on " <<t.edge->getLabel()<<endl;
                             epsHistory.clear();
                             sf.push(Node(strPos + 1, t.to, epsHistory));
                         }
+                        cout<<t.from<<"-("<<t.edge->getLabel()<<")->"<<t.to<<endl;
                     } else {
-                        cout<<", Nothing for us here, mate."<<endl;
+                        cout<<"Dead end."<<endl;
                     }
                     cout<<endl;
                 }
@@ -219,6 +227,52 @@ class NFA {
                 }
             }
             return *this;
+        }
+        set<State> move(set<State> clist, char ch) {
+            set<State> nlist;
+            cout<<ch<<": "<<endl;
+            for (State s : clist) {
+                for (auto it = states[s].rbegin(); it != states[s].rend(); it++) {
+                    Transition t = *it;
+                    cout<<t.from<<"-("<<t.edge->getLabel()<<")->"<<t.to<<"?";
+                    if (t.edge->matches(ch) || t.edge->matches('.')) {
+                       cout<<"Yes."<<endl;
+                        nlist.insert(t.to);
+                    } else {
+                        cout<<"No."<<endl;
+                    }
+                }
+            }
+            return nlist;
+        }
+        set<State> e_closure(set<State> clist) {
+            set<State> nlist = clist;
+            Stack<State> sf;
+            for (State s : clist)
+                sf.push(s);
+            while (!sf.empty()) {
+                State s = sf.pop();
+                for (auto it = states[s].rbegin(); it != states[s].rend(); it++) {
+                    Transition t = *it;
+                    if (t.edge->isEpsilon()) {
+                        if (nlist.find(t.to) == nlist.end()) {
+                            nlist.insert(t.to);
+                            sf.push(t.to);
+                        }
+                    }
+                }
+            }
+            return nlist;
+        }
+        bool match(string text) {
+            set<State> curr, next;
+            next.insert(start);
+            curr = e_closure(next);
+            for (int i = 0; i < text.length(); i++) {
+                next = move(curr, text[i]);
+                curr = e_closure(next);
+            }
+            return curr.find(accept) != curr.end();
         }
 };
 
