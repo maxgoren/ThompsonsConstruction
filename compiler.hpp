@@ -5,7 +5,6 @@
 #include "nfa.hpp"
 using namespace std;
 
-
 class NFACompiler {
     private:
         int l;
@@ -39,7 +38,7 @@ class NFACompiler {
         NFA emptyExpr() {
             return singleTransitionNFA(new EpsilonEdge());
         }
-        NFA atomicNFA(char c) {
+        NFA atomicNFA(Token c) {
             return singleTransitionNFA(new CharEdge(c));
         }
         NFA concatNFA(NFA first, NFA second) {
@@ -89,7 +88,7 @@ class NFACompiler {
             return nnfa;
         }
         NFA buildOperatorNFA(RegularExpression* ast) {
-            switch (ast->getSymbol()) {
+            switch (ast->getSymbol().charachters[0]) {
                 case '@': {
                     NFA b = nfaStack.pop();
                     NFA a = nfaStack.pop();
@@ -121,7 +120,7 @@ class NFACompiler {
             if (ast != nullptr) {
                 gen_nfa(ast->getLeft());
                 gen_nfa(ast->getRight());
-                if (!isOp(ast->getSymbol())) {
+                if (!isOp(ast->getSymbol().charachters[0])) {
                     nfaStack.push(atomicNFA(ast->getSymbol()));
                 } else {
                     nfaStack.push(buildOperatorNFA(ast));

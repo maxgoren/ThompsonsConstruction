@@ -6,11 +6,12 @@
 #include <unordered_set>
 #include <vector>
 #include "stack.hpp"
+#include "tokenize.hpp"
 using namespace std;
 
 class Edge {
     public:
-        virtual char getLabel() = 0;
+        virtual Token getLabel() = 0;
         virtual bool matches(char c) = 0;
         virtual bool isEpsilon() = 0;
         virtual ~Edge() { }
@@ -18,9 +19,9 @@ class Edge {
 
 class CharEdge : public Edge {
     private:
-        char label;
+        Token label;
     public:
-        CharEdge(char c) {
+        CharEdge(Token c) {
             label = c;
         }
         ~CharEdge() {
@@ -30,9 +31,16 @@ class CharEdge : public Edge {
             return false;
         }
         bool matches(char c) {
-            return label == c;
+            if (label.symbol == TK_SPECIFIEDSET) {
+                for (char m : label.charachters) {
+                    if (c == m)
+                        return true;
+                }
+                return false;
+            }
+            return label.charachters[0] == c;
         }
-        char getLabel() {
+        Token getLabel() {
             return label;
         }
 };
@@ -47,8 +55,8 @@ class EpsilonEdge : public Edge {
         bool isEpsilon() {
             return true;
         }
-        char getLabel() {
-            return '&';
+        Token getLabel() {
+            return Token(TK_NONE, "&");
         }
 };
 
@@ -100,7 +108,7 @@ namespace std {
     template <> struct hash<Transition> {
         std::size_t operator()(const Transition& t) const noexcept {
             string tmp = to_string(t.from);
-            tmp.push_back(t.edge->getLabel());
+            tmp += t.edge->getLabel().charachters;
             tmp += to_string(t.to);
             return std::hash<string>()(tmp);
         }
@@ -206,7 +214,7 @@ class NFA {
                             epsHistory.clear();
                             sf.push(Node(strPos + 1, t.to, epsHistory));
                         }
-                        cout<<t.from<<"-("<<t.edge->getLabel()<<")->"<<t.to<<endl;
+                        cout<<t.from<<"-("<<t.edge->getLabel().charachters<<")->"<<t.to<<endl;
                     } else {
                         cout<<"Dead end."<<endl;
                     }
@@ -228,15 +236,20 @@ class NFA {
             }
             return *this;
         }
+        //Gathers a list of states reachable from those in clist, which have transition which consumes ch
         set<State> move(set<State> clist, char ch) {
             set<State> nlist;
             cout<<ch<<": "<<endl;
             for (State s : clist) {
                 for (Transition t : states[s]) {
-                    cout<<t.from<<"-("<<t.edge->getLabel()<<")->"<<t.to<<"?";
+                    cout<<t.from<<"-("<<t.edge->getLabel().charachters<<")->"<<t.to<<"?";
                     if (t.edge->matches(ch) || t.edge->matches('.')) {
-                       cout<<"Yes."<<endl;
-                        nlist.insert(t.to);
+                        if (t.edge->isEpsilon() == false) {
+                            cout<<"Yes."<<endl;
+                            nlist.insert(t.to);
+                        } else {
+                            cout<<"No."<<endl;
+                        }
                     } else {
                         cout<<"No."<<endl;
                     }
@@ -244,6 +257,7 @@ class NFA {
             }
             return nlist;
         }
+        //Gathers a list of states reachable from those in clist using _only_ epsilon transitions.
         set<State> e_closure(set<State> clist) {
             set<State> nlist = clist;
             Stack<State> sf;

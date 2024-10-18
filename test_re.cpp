@@ -24,6 +24,12 @@ void test3() {
     nfa.match("abbcdef");
 }
 
+void test4() {
+    NFACompiler compiler;
+    NFA nfa = compiler.compile("r[aeiou]n+ing");
+    cout<<nfa.match("running")<<endl;
+}
+
 void testCata() {
     NFACompiler compiler;
     NFA nfa = compiler.compile("a*a*a*a*a*a*a*a*a*a*a*a*aac");
@@ -32,7 +38,7 @@ void testCata() {
 }
 
 int main() {
-    test();
+    test4();
     //test2();
     //test3();
     //testCata();
