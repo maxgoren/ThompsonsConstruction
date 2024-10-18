@@ -232,8 +232,7 @@ class NFA {
             set<State> nlist;
             cout<<ch<<": "<<endl;
             for (State s : clist) {
-                for (auto it = states[s].rbegin(); it != states[s].rend(); it++) {
-                    Transition t = *it;
+                for (Transition t : states[s]) {
                     cout<<t.from<<"-("<<t.edge->getLabel()<<")->"<<t.to<<"?";
                     if (t.edge->matches(ch) || t.edge->matches('.')) {
                        cout<<"Yes."<<endl;
@@ -252,8 +251,7 @@ class NFA {
                 sf.push(s);
             while (!sf.empty()) {
                 State s = sf.pop();
-                for (auto it = states[s].rbegin(); it != states[s].rend(); it++) {
-                    Transition t = *it;
+                for (Transition t : states[s]) {
                     if (t.edge->isEpsilon()) {
                         if (nlist.find(t.to) == nlist.end()) {
                             nlist.insert(t.to);

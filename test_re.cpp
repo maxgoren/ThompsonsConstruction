@@ -2,7 +2,7 @@
 #include "compiler.hpp"
 void test() {
     NFACompiler compiler;
-    NFA nfa = compiler.compile("(a+b|ac)d");
+    NFA nfa = compiler.compile("(a*b|ac)d");
     string tests[] = { "aaaaabd", "aaaaac", "abd", "bd"};
     for (int i = 0; i < 4; i++) {
         cout<<"---------------------"<<endl;
@@ -21,7 +21,7 @@ void test2() {
 void test3() {
     NFACompiler compiler;
     NFA nfa = compiler.compile("a(b|cd)*ef");
-    nfa.grep("aabbcdeffaefe");
+    nfa.match("abbcdef");
 }
 
 void testCata() {
@@ -32,9 +32,9 @@ void testCata() {
 }
 
 int main() {
-    //test();
+    test();
     //test2();
     //test3();
-    testCata();
+    //testCata();
     return 0;
 }
