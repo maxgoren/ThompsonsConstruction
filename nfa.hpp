@@ -12,6 +12,7 @@ class Edge {
     public:
         virtual Token getLabel() = 0;
         virtual bool matches(char c) = 0;
+        virtual bool positionIs(int index) = 0;
         virtual bool isEpsilon() = 0;
         virtual ~Edge() { }
 };
@@ -19,6 +20,21 @@ class Edge {
 class CharEdge : public Edge {
     private:
         Token label;
+        bool checkInRange(char c) {
+            char lo, hi;
+            bool is_good = false;
+            for (int i = 1; i < label.charachters.size()-1; i++) {
+                if (i+1 < label.charachters.size() && label.charachters[i] == '-') {
+                    lo = label.charachters[i-1];
+                    hi = label.charachters[i+1];
+                    if (c >= lo && c <= hi) {
+                        is_good = true;
+                        break;
+                    }
+                }
+            }
+            return is_good;
+        }
     public:
         CharEdge(Token c) {
             label = c;
@@ -29,6 +45,9 @@ class CharEdge : public Edge {
         bool isEpsilon() {
             return false;
         }
+        bool positionIs(int i) {
+            return true;
+        }
         bool matches(char c) {
             if (label.symbol == TK_SPECIFIEDSET) {
                 for (char m : label.charachters) {
@@ -36,6 +55,8 @@ class CharEdge : public Edge {
                         return true;
                 }
                 return false;
+            } else if (label.symbol == TK_SPECIFIEDRANGE) {
+                return checkInRange(c);
             }
             return label.charachters[0] == c;
         }
@@ -49,6 +70,9 @@ class EpsilonEdge : public Edge {
         EpsilonEdge() { }
         ~EpsilonEdge() { }
         bool matches(char c) {
+            return true;
+        }
+        bool positionIs(int i) {
             return true;
         }
         bool isEpsilon() {
@@ -114,14 +138,6 @@ namespace std {
     };
 }
 
-struct Node {
-    int strPos;
-    State state;
-    unordered_set<Transition> epsHistory;
-    Node(int sp, State s, unordered_set<Transition> t) : strPos(sp), state(s), epsHistory(t) { }
-};
-
-
 class NFA {
     private:
         State start;
@@ -171,47 +187,6 @@ class NFA {
         vector<Transition>& getTransitions(State state) {
             return states[state];
         }
-        bool matchbt(string text) {
-            cout<<"Attempting to match: "<<text<<", Start state: "<<start<<", Accept state: "<<accept<<endl;
-            unordered_set<Transition> epsHistory;
-            Stack<Node> sf;
-            sf.push(Node(0, start, epsHistory));
-            int from = 0;
-            while (!sf.empty()) {
-                int strPos = sf.top().strPos;
-                State currState = sf.top().state;
-                epsHistory = sf.top().epsHistory;
-                sf.pop();
-                char input = text[strPos];
-                cout<<"State: "<<currState<<", Input: "<<input<<endl;
-                if (accept == currState) { 
-                    cout<<"Found Accept State."<<endl;
-                    cout<<text.substr(from, text.length()-strPos);
-                    return true;
-                }
-                for (auto it = states[currState].rbegin(); it != states[currState].rend(); it++) {
-                    Transition t = *it;
-                    if ((t.edge->matches(input) || t.edge->matches('.')) || t.edge->isEpsilon()) {
-                        if (t.edge->isEpsilon()) { 
-                            if (epsHistory.find(t) != epsHistory.end()) {
-                                cout<<"\nAlready on Stack.\n"<<endl;
-                                continue;
-                            }
-                            epsHistory.insert(t);
-                            sf.push(Node(strPos, t.to, epsHistory));
-                        } else {
-                            epsHistory.clear();
-                            sf.push(Node(strPos + 1, t.to, epsHistory));
-                        }
-                        cout<<t.from<<"-("<<t.edge->getLabel().charachters<<")->"<<t.to<<endl;
-                    } else {
-                        cout<<"Dead end."<<endl;
-                    }
-                    cout<<endl;
-                }
-            }
-            return false;
-        }
         NFA& operator=(const NFA& nfa) {
             if (this != &nfa) {
                 start = nfa.start;
@@ -225,54 +200,6 @@ class NFA {
             }
             return *this;
         }
-        //Gathers a list of states reachable from those in clist, which have transition which consumes ch
-        unordered_set<State> move(unordered_set<State> clist, char ch) {
-            unordered_set<State> nlist;
-            cout<<ch<<": "<<endl;
-            for (State s : clist) {
-                for (Transition t : states[s]) {
-                    if (t.edge->matches(ch) || t.edge->matches('.')) {
-                        if (t.edge->isEpsilon() == false) {
-                            cout<<'\t'<<t.from<<" - ("<<t.edge->getLabel().charachters<<") ->"<<t.to<<endl;
-                            nlist.insert(t.to);
-                        } 
-                    }
-                }
-            }
-            return nlist;
-        }
-        //An interesting adaptation of Depth First Search.
-        //Gathers a list of states reachable from those in clist using _only_ epsilon transitions.
-        unordered_set<State> e_closure(unordered_set<State> clist) {
-            unordered_set<State> nlist = clist;
-            Stack<State> sf;
-            for (State s : clist)
-                sf.push(s);
-            while (!sf.empty()) {
-                State s = sf.pop();
-                for (Transition t : states[s]) {
-                    if (t.edge->isEpsilon()) {
-                        if (nlist.find(t.to) == nlist.end()) {
-                            cout<<'\t'<<t.from<<" - ("<<t.edge->getLabel().charachters<<") ->"<<t.to<<endl;
-                            nlist.insert(t.to);
-                            sf.push(t.to);
-                        }
-                    }
-                }
-            }
-            return nlist;
-        }
-        bool match(string text) {
-            unordered_set<State> curr, next;
-            next.insert(start);
-            curr = e_closure(next);
-            for (int i = 0; i < text.length(); i++) {
-                next = move(curr, text[i]);
-                curr = e_closure(next);
-            }
-            return curr.find(accept) != curr.end();
-        }
 };
-
 
 #endif

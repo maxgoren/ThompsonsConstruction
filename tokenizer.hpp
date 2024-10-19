@@ -7,12 +7,13 @@ using namespace std;
 
 enum Symbol {
     TK_CHAR, TK_LPAREN, TK_RPAREN, TK_LSQUARE, TK_RSQUARE, 
-    TK_STAR, TK_PLUS, TK_QUESTION, TK_CONCAT, TK_OR, TK_SPECIFIEDSET, TK_NONE
+    TK_STAR, TK_PLUS, TK_QUESTION, TK_CONCAT, TK_OR, TK_SPECIFIEDSET, 
+    TK_SPECIFIEDRANGE, TK_NONE
 };
 
 vector<string> symStr = { 
     "TK_CHAR", "TK_LPAREN", "TK_RPAREN", "TK_LSQUARE", "TK_RSQUARE", 
-    "TK_STAR", "TK_PLUS", "TK_QUESTION", "TK_CONCAT", "TK_OR", "TK_SPECIFIEDSET", "TK_NONE"
+    "TK_STAR", "TK_PLUS", "TK_QUESTION", "TK_CONCAT", "TK_OR", "TK_SPECIFIEDSET", "TK_SPECIFIEDRANGE", "TK_NONE"
 };
 
 struct Token {
@@ -36,10 +37,14 @@ class Tokenizer {
         void setSpecified(Token& nt, string re, int& idx) {
             string buff;
             idx++;
-            while (idx < re.length() && re[idx] != ']')
+            bool isRange = false;
+            while (idx < re.length() && re[idx] != ']') {
+                if (re[idx] == '-') 
+                    isRange = true;
                 buff.push_back(re[idx++]);
+            }
             nt.charachters = buff;
-            nt.symbol = TK_SPECIFIEDSET;
+            nt.symbol = isRange ? TK_SPECIFIEDRANGE:TK_SPECIFIEDSET;
         }
     public:
         vector<Token> tokenize(string re) {
