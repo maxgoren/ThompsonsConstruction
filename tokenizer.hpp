@@ -25,7 +25,7 @@ struct Token {
 class Tokenizer {
     private:
         bool isChar(char c) {
-            return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
+            return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '.';
         }
         void setToken(Token& nt, char ch, Symbol sym) {
             string buff;

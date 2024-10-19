@@ -14,25 +14,27 @@ void test() {
 void test2() {
     NFACompiler compiler;
     NFA nfa = compiler.compile("r(a|e|i|o|u)n+ing.*");
-    cout<<nfa.match("rining")<<endl;
-    cout<<nfa.match("roman")<<endl;
-    cout<<nfa.match("runningmates")<<endl;
+    cout<<nfa.match("running")<<endl;
+    cout<<"------------------"<<endl;
+    cout<<nfa.match("rwning")<<endl;
+    cout<<"------------------"<<endl;
+    cout<<nfa.match("riningmates")<<endl;
 }
 
 void test3() {
     NFACompiler compiler;
     NFA nfa = compiler.compile("a(b|cd)*ef");
-    nfa.match("abbcdef");
+    cout<<nfa.match("abbcdef")<<endl;
 }
 
 void test4() {
     NFACompiler compiler;
-    NFA nfa = compiler.compile("r[aeiou]n+ing");
+    NFA nfa = compiler.compile("r[aeiou]n+ing.*");
     cout<<nfa.match("running")<<endl;
     cout<<"------------------"<<endl;
     cout<<nfa.match("rwning")<<endl;
     cout<<"------------------"<<endl;
-    cout<<nfa.match("rining")<<endl;
+    cout<<nfa.match("riningmates")<<endl;
 }
 
 void testCata() {
@@ -44,7 +46,7 @@ void testCata() {
 
 int main() {
     test4();
-    //test2();
+    test2();
     //test3();
     //testCata();
     return 0;

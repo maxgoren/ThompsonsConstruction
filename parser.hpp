@@ -1,7 +1,7 @@
 #ifndef parser_hpp
 #define parser_hpp
 #include <iostream>
-#include "tokenize.hpp"
+#include "tokenizer.hpp"
 #include "stack.hpp"
 using namespace std;
 
@@ -71,7 +71,7 @@ bool isOp(char c) {
 
 bool isOp(Token c) {
     switch (c.symbol) {
-            case TK_STAR:
+        case TK_STAR:
         case TK_PLUS:
         case TK_QUESTION: 
         case TK_CONCAT:
@@ -87,12 +87,9 @@ class Parser {
         RegularExpression* makeTree(vector<Token> postfix) {
             Stack<RegularExpression*> sf;
             for (Token c : postfix) {
-                cout<<"Processing: "<<c.charachters<<" ";
                 if (!isOp(c)) {
-                    cout<<"Alphabet."<<endl;
                     sf.push(new ExpressionLiteral(c));
                 } else {
-                    cout<<"Operator."<<endl;
                     auto right = sf.empty() ? nullptr:sf.pop();
                     auto left = sf.empty() ? nullptr:sf.pop();
                     sf.push(new ExpressionOperator(c, left, right));
@@ -140,7 +137,7 @@ class Parser {
                 }
                 if (i+1 < str.length() && inset == false) {
                     char p = str[i+1];
-                    if (p == '|' || p == '*' || p == '+' || p == ')' || p == '?')
+                    if (p == '|' || p == '*' || p == '+' || p == ')' || p == '?' || p == ']')
                         continue;
                     fixed.push_back('@');
                 }
@@ -189,13 +186,10 @@ class Parser {
             regexp = addConcatOp(regexp);
             auto tokens =  tz.tokenize(regexp);
             int i = 0;
-            for (auto m : tokens) {
-                cout<<i++<<": "<<m.charachters<<endl;
-            }
             vector<Token> postfix = in2post(tokens);
-            cout<<"Postfix: ";
+            cout<<"Postfix: \n";
             for (auto m : postfix) {
-                cout<<m.charachters<<" - "<<symStr[m.symbol]<<endl;
+                cout<<"("<<i++<<"): "<<m.charachters<<" - "<<symStr[m.symbol]<<endl;
             }
             cout<<endl;
             return makeTree(postfix);

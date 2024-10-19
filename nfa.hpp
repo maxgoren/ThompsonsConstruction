@@ -1,12 +1,11 @@
 #ifndef nfa_hpp
 #define nfa_hpp
 #include <iostream>
-#include <set>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 #include "stack.hpp"
-#include "tokenize.hpp"
+#include "tokenizer.hpp"
 using namespace std;
 
 class Edge {
@@ -237,8 +236,8 @@ class NFA {
             return *this;
         }
         //Gathers a list of states reachable from those in clist, which have transition which consumes ch
-        set<State> move(set<State> clist, char ch) {
-            set<State> nlist;
+        unordered_set<State> move(unordered_set<State> clist, char ch) {
+            unordered_set<State> nlist;
             cout<<ch<<": "<<endl;
             for (State s : clist) {
                 for (Transition t : states[s]) {
@@ -252,9 +251,10 @@ class NFA {
             }
             return nlist;
         }
+        //An interesting adaptation of Depth First Search.
         //Gathers a list of states reachable from those in clist using _only_ epsilon transitions.
-        set<State> e_closure(set<State> clist) {
-            set<State> nlist = clist;
+        unordered_set<State> e_closure(unordered_set<State> clist) {
+            unordered_set<State> nlist = clist;
             Stack<State> sf;
             for (State s : clist)
                 sf.push(s);
@@ -273,7 +273,7 @@ class NFA {
             return nlist;
         }
         bool match(string text) {
-            set<State> curr, next;
+            unordered_set<State> curr, next;
             next.insert(start);
             curr = e_closure(next);
             for (int i = 0; i < text.length(); i++) {
