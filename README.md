@@ -12,6 +12,7 @@ Steps:
 Once the NFA has been constructed it can be used to perform pattern matching on text strings.
 There are two main ways of simulating the NFA:
   - backtracking depth first search
-  - subset construction
+  - powerset construction
 
-So far only backtracking DFS is supported.
+Backtracking DFS is conceptually simple, but potentially slow on some inputs
+Powerset construction is smecksy and fast on all inputs.

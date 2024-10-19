@@ -171,16 +171,6 @@ class NFA {
         vector<Transition>& getTransitions(State state) {
             return states[state];
         }
-        bool grep(string text) {
-            bool found = false;
-            for (int i = 0; i < text.length(); i++) {
-                if (match(text.substr(i))) {
-                    cout<<"Match starting from: "<<i<<endl;
-                    found = true;
-                }
-            }
-            return found;
-        }
         bool matchbt(string text) {
             cout<<"Attempting to match: "<<text<<", Start state: "<<start<<", Accept state: "<<accept<<endl;
             unordered_set<Transition> epsHistory;

@@ -120,13 +120,14 @@ class NFACompiler {
             if (ast != nullptr) {
                 gen_nfa(ast->getLeft());
                 gen_nfa(ast->getRight());
-                if (!isOp(ast->getSymbol().charachters[0])) {
+                if (!isOp(ast->getSymbol())) {
                     nfaStack.push(atomicNFA(ast->getSymbol()));
                 } else {
                     nfaStack.push(buildOperatorNFA(ast));
                 }
             }
         }
+        
     public:
         NFACompiler() {
             l = 0;
