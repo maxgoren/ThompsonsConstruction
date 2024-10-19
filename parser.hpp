@@ -187,7 +187,7 @@ class Parser {
             Tokenizer tz;
             cout<<"Parsing: "<<regexp<<endl;
             regexp = addConcatOp(regexp);
-            auto tokens =  tz.tokeize(regexp);
+            auto tokens =  tz.tokenize(regexp);
             int i = 0;
             for (auto m : tokens) {
                 cout<<i++<<": "<<m.charachters<<endl;

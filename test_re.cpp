@@ -1,5 +1,6 @@
 #include <iostream>
 #include "compiler.hpp"
+
 void test() {
     NFACompiler compiler;
     NFA nfa = compiler.compile("(a*b|ac)d");
@@ -28,6 +29,10 @@ void test4() {
     NFACompiler compiler;
     NFA nfa = compiler.compile("r[aeiou]n+ing");
     cout<<nfa.match("running")<<endl;
+    cout<<"------------------"<<endl;
+    cout<<nfa.match("rwning")<<endl;
+    cout<<"------------------"<<endl;
+    cout<<nfa.match("rining")<<endl;
 }
 
 void testCata() {

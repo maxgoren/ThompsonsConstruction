@@ -27,10 +27,6 @@ class Tokenizer {
         bool isChar(char c) {
             return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
         }
-    public:
-        Tokenizer() {
-
-        }
         void setToken(Token& nt, char ch, Symbol sym) {
             string buff;
             buff.push_back(ch);
@@ -45,7 +41,8 @@ class Tokenizer {
             nt.charachters = buff;
             nt.symbol = TK_SPECIFIEDSET;
         }
-        vector<Token> tokeize(string re) {
+    public:
+        vector<Token> tokenize(string re) {
             vector<Token> tokens;
             for (int i = 0; i < re.size(); i++) {
                 Token nt;
