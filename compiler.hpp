@@ -87,29 +87,61 @@ class NFACompiler {
             nnfa.addTransition(Transition(nnfa.getStart(), nnfa.getAccept(), new EpsilonEdge()));
             return nnfa;
         }
+        //There is more than likely a more efficient way of doing, but heres the plan:
+        // initialize N new NFA's as N(n) where n is the nfa to be repeated, placing them into a stack.
+        // Initialize our NFA. 'F' that will be the NFA(n, n, n...), store F's accept state as p.
+        // While NFA's remain on the stack, remove top nfa from stack and store as t.
+        // copy t's transitions into F, creating an epsilon transition from p to tmp's start state, then assigning tmps accept state as p.
+        //When the stack is empty create one final epsilong transition from p to F's accept state.
+        NFA repeatNTimes(NFA a, int N) {
+            Stack<NFA> sf;
+            for (int i = 0; i < N; i++) {
+                NFA tnfa;
+                initNextNFA(tnfa);
+                copyTransitions(tnfa, a);
+                tnfa.addTransition(Transition(tnfa.getStart(), a.getStart(), new EpsilonEdge()));
+                tnfa.addTransition(Transition(a.getAccept(), tnfa.getAccept(), new EpsilonEdge()));
+                sf.push(tnfa);
+            }
+            NFA fnfa;
+            initNextNFA(fnfa);
+            State prev = fnfa.getStart();
+            while (!sf.empty()) {
+                NFA tmp = sf.pop();
+                copyTransitions(fnfa, tmp);
+                fnfa.addTransition(Transition(prev, tmp.getStart(), new EpsilonEdge()));
+                prev = tmp.getAccept();
+            }
+            fnfa.addTransition(Transition(prev, fnfa.getAccept(), new EpsilonEdge()));
+            return fnfa;
+        }
         NFA buildOperatorNFA(RegularExpression* ast) {
-            switch (ast->getSymbol().charachters[0]) {
-                case '@': {
+            switch (ast->getSymbol().symbol) {
+                case RE_CONCAT: {
                     NFA b = nfaStack.pop();
                     NFA a = nfaStack.pop();
                     return concatNFA(a, b);
                 }
-                case '|': {
+                case RE_OR: {
                     NFA b = nfaStack.pop();
                     NFA a = nfaStack.pop();
                     return alternateNFA(a, b);
                 }
-                case '*': {
+                case RE_STAR: {
                     NFA a = nfaStack.pop();
                     return kleeneNFA(a, false);
                 }
-                case '+': {
+                case RE_PLUS: {
                     NFA a = nfaStack.pop();
                     return kleeneNFA(a, true);
                 }
-                case '?': {
+                case RE_QUESTION: {
                     NFA a = nfaStack.pop();
-                     return zeroOrOnce(a);
+                    return zeroOrOnce(a);
+                }
+                case RE_QUANTIFIER: {
+                    NFA a = nfaStack.pop();
+                    return repeatNTimes(a, atoi(ast->getSymbol().charachters.c_str()));
                 }
                 default:
                     break;

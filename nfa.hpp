@@ -49,13 +49,13 @@ class CharEdge : public Edge {
             return true;
         }
         bool matches(char c) {
-            if (label.symbol == TK_SPECIFIEDSET) {
+            if (label.symbol == RE_SPECIFIEDSET) {
                 for (char m : label.charachters) {
                     if (c == m)
                         return true;
                 }
                 return false;
-            } else if (label.symbol == TK_SPECIFIEDRANGE) {
+            } else if (label.symbol == RE_SPECIFIEDRANGE) {
                 return checkInRange(c);
             }
             return label.charachters[0] == c;
@@ -79,7 +79,7 @@ class EpsilonEdge : public Edge {
             return true;
         }
         Token getLabel() {
-            return Token(TK_NONE, "&");
+            return Token(RE_NONE, "&");
         }
 };
 

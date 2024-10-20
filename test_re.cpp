@@ -49,11 +49,19 @@ void testCata() {
     cout<<pm.match("aaaaaaaaaaaaaaaaaaaab")<<endl;
 }
 
+void test5() {
+    NFACompiler compiler;
+    NFA nfa = compiler.compile("(a|b){3}bd");
+    PowerSetPatternMatcher pm(nfa);
+    cout<<pm.match("bbbad")<<endl;
+}
+
 int main() {
-    testCata();
+   /* testCata();
     test();
     test4();
     test2();
-    test3();
+    test3();  */
+    test5();
     return 0;
 }

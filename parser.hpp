@@ -71,11 +71,12 @@ bool isOp(char c) {
 
 bool isOp(Token c) {
     switch (c.symbol) {
-        case TK_STAR:
-        case TK_PLUS:
-        case TK_QUESTION: 
-        case TK_CONCAT:
-        case TK_OR: return true;
+        case RE_STAR:
+        case RE_PLUS:
+        case RE_QUESTION: 
+        case RE_QUANTIFIER:
+        case RE_CONCAT:
+        case RE_OR: return true;
         default:
             break;
     }
@@ -99,11 +100,12 @@ class Parser {
         }
         int precedence(Token c) {
             switch (c.symbol) {
-                case TK_STAR:
-                case TK_PLUS:
-                case TK_QUESTION: return 50;
-                case TK_CONCAT: return 30;
-                case TK_OR: return 20;
+                case RE_STAR:
+                case RE_PLUS:
+                case RE_QUANTIFIER:
+                case RE_QUESTION: return 50;
+                case RE_CONCAT: return 30;
+                case RE_OR: return 20;
                 default:
                     break;
             }
@@ -111,11 +113,12 @@ class Parser {
         }
         bool leftAssociative(Token c) {
             switch (c.symbol) {
-                 case TK_STAR:
-                case TK_PLUS:
-                case TK_QUESTION: 
-                case TK_CONCAT:
-                case TK_OR: return true;
+                 case RE_STAR:
+                case RE_PLUS:
+                case RE_QUANTIFIER:
+                case RE_QUESTION: 
+                case RE_CONCAT:
+                case RE_OR: return true;
                 default:
                     break;
             }
@@ -128,27 +131,28 @@ class Parser {
                 fixed.push_back(str[i]);
                 if (str[i] == '(' || str[i] == '|')
                     continue;
-                if (str[i] == '[') {
+                if (str[i] == '[' || str[i] == '{') {
                     inset = true;
                     continue;
                 }
-                if (str[i] == ']') {
+                if (str[i] == ']' || str[i] == '}') {
                     inset = false;
                 }
                 if (i+1 < str.length() && inset == false) {
                     char p = str[i+1];
-                    if (p == '|' || p == '*' || p == '+' || p == ')' || p == '?' || p == ']')
+                    if (p == '|' || p == '*' || p == '+' || p == ')' || p == '?' || p == ']' || p == '{' || p == '}')
                         continue;
                     fixed.push_back('@');
                 }
             }
+            cout<<fixed<<endl;
             return fixed;
         }
         vector<Token> in2post(vector<Token> str) {
             Stack<Token> ops;
             vector<Token> postfix;
             for (int i = 0; i < str.size(); i++) {
-                if (str[i].symbol == TK_LPAREN) {
+                if (str[i].symbol == RE_LPAREN) {
                     ops.push(str[i]);
                 } else if (isOp(str[i])) {
                         if (precedence(str[i]) < precedence(ops.top()) || (precedence(str[i]) == precedence(ops.top()) && leftAssociative(str[i]))) {
@@ -158,10 +162,10 @@ class Parser {
                         } else {
                             ops.push(str[i]);
                         }
-                } else if (str[i].symbol == TK_RPAREN) {
+                } else if (str[i].symbol == RE_RPAREN) {
                     while (!ops.empty()) {
                         Token c = ops.pop();
-                        if (c.symbol == TK_LPAREN)
+                        if (c.symbol == RE_LPAREN)
                             break;
                         else postfix.push_back(c);
                     }
@@ -171,7 +175,7 @@ class Parser {
             }
             while (!ops.empty()) {
                 Token c = ops.pop();
-                if (c.symbol != TK_LPAREN)
+                if (c.symbol != RE_LPAREN)
                     postfix.push_back(c);
             }
             return postfix;
@@ -189,7 +193,7 @@ class Parser {
             vector<Token> postfix = in2post(tokens);
             cout<<"Postfix: \n";
             for (auto m : postfix) {
-                cout<<"("<<i++<<"): "<<m.charachters<<" - "<<symStr[m.symbol]<<endl;
+                cout<<"("<<i++<<"): "<<m.charachters<<" - "<<reSymStr[m.symbol]<<endl;
             }
             cout<<endl;
             return makeTree(postfix);
