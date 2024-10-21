@@ -1,6 +1,7 @@
 #ifndef compiler_hpp
 #define compiler_hpp
 #include <iostream>
+#include <queue>
 #include "parser.hpp"
 #include "nfa.hpp"
 using namespace std;
@@ -94,7 +95,7 @@ class NFACompiler {
         // copy t's transitions into F, creating an epsilon transition from p to tmp's start state, then assigning tmps accept state as p.
         //When the stack is empty create one final epsilong transition from p to F's accept state.
         NFA repeatNTimes(NFA a, int N) {
-            Stack<NFA> sf;
+            queue<NFA> sf;
             for (int i = 0; i < N; i++) {
                 NFA tnfa;
                 initNextNFA(tnfa);
@@ -107,7 +108,7 @@ class NFACompiler {
             initNextNFA(fnfa);
             State prev = fnfa.getStart();
             while (!sf.empty()) {
-                NFA tmp = sf.pop();
+                NFA tmp = sf.front(); sf.pop();
                 copyTransitions(fnfa, tmp);
                 fnfa.addTransition(Transition(prev, tmp.getStart(), new EpsilonEdge()));
                 prev = tmp.getAccept();

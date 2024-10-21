@@ -51,17 +51,19 @@ void testCata() {
 
 void test5() {
     NFACompiler compiler;
-    NFA nfa = compiler.compile("(a|b){3}bd");
+    NFA nfa = compiler.compile("a(b|s|d)(o|s|e)*t");
     PowerSetPatternMatcher pm(nfa);
-    cout<<pm.match("bbbad")<<endl;
+    BacktrackingPatternMatcher pm2(nfa);
+    cout<<pm2.match("abooot")<<endl;
+    cout<<pm.match("abooot")<<endl;
 }
 
 int main() {
-   /* testCata();
+   // testCata();
     test();
-    test4();
+    //test4();
     test2();
-    test3();  */
-    test5();
+    test3(); 
+   // test5();
     return 0;
 }

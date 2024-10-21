@@ -119,10 +119,12 @@ class PowerSetPatternMatcher : public PatternMatcher {
             nfa = fa;
         }
         bool match(string text) {
+            cout<<"Attempting to match: "<<text<<", Start state: "<<nfa.getStart()<<", Accept state: "<<nfa.getAccept()<<endl;
             unordered_set<State> curr, next;
             next.insert(nfa.getStart());
             curr = e_closure(next);
             for (int i = 0; i < text.length(); i++) {
+                cout<<"Processing Input Symbol: "<<text[i]<<": "<<endl;
                 next = move(curr, text[i]);
                 curr = e_closure(next);
             }
