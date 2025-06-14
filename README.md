@@ -15,6 +15,6 @@ There are two main ways of simulating the NFA:
   - backtracking depth first search
   - Thompson's algorithm (powerset construction)
 
-Backtracking DFS is conceptually simple, but potentially slow on some inputs
-Powerset construction is smecksy and fast on all inputs.
+Included is Thompsons algorithm for powerset construction. Unless you plan to implement backreferences, there
+is no need to use backtracking, though should you wish to, its easy to implement.
 
