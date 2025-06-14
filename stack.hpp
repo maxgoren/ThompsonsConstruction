@@ -4,70 +4,63 @@
 template <class T>
 class Stack {
     private:
-        struct snode {
-            T info;
-            snode* next;
-            snode(T i, snode* n) : info(i), next(n) { }
-        };
-        using link = snode*;
-        link head;
-        int count;
-        void init() {
-            head = nullptr;
-            count = 0;
+        T* info;
+        int n;
+        int maxN;
+        void grow() {
+            T* old = info;
+            info = new T[2*maxN];
+            for (int i = 0; i < maxN; i++) {
+                info[i] = old[i];
+            }
+            delete [] old;
+            maxN *= 2;
+        }
+        void init(int size) {
+            maxN = size;
+            n = 0;
+            info = new T[maxN];
         }
     public:
-        Stack() {
-            init();
+        Stack(int size = 255) {
+            init(size);
         }
         Stack(const Stack& st) {
-            init();
-            snode d(T(), nullptr); link c = &d;
-            for (link it = st.head; it != nullptr; it = it->next) {
-                c->next = new snode(it->info, nullptr);
-                c = c->next;
+            init(st.maxN);
+            for (int i = 0; i < st.n; i++) {
+                info[i] = st.info[i];
             }
-            head = d.next;
-            count = st.count;
+            n = st.n;
         }
         ~Stack() {
-            clear();
+            delete [] info;
         }
         bool empty() const {
-            return head == nullptr;
+            return n == 0;
         }
         int size() const {
-            return count;
+            return n;
         }
-        void push(T info) {
-            head = new snode(info, head);
-            count++;
+        void push(T item) {
+            if (n+1 == maxN) grow();
+            info[n++] = item;
         }
         T& top() {
-            return head->info;
+            return info[n-1];
         }
         T pop() {
-            T ret = head->info;
-            link x = head;
-            head = head->next;
-            x->next = x;
-            delete x;
-            count--;
-            return ret;
+            return info[--n];
         }
         void clear() {
-            while (!empty()) pop();
+            n = 0;
         }
         Stack& operator=(const Stack& st) {
             if (this != &st) {
-                init();
-                snode d(T(), nullptr); link c = &d;
-                for (link it = st.head; it != nullptr; it = it->next) {
-                    c->next = new snode(it->info, nullptr);
-                    c = c->next;
+                init(st.maxN);
+                for (int i = 0; i < st.n; i++) {
+                    info[i] = st.info[i];
                 }
-                head = d.next;
-                count = st.count;
+                n = st.n;
             }
             return *this;
         }
